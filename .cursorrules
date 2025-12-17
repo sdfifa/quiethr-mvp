@@ -1,0 +1,65 @@
+# Project Context
+Project Name: QuietHR
+Description: A Quiet Hiring & Recruitment Marketing platform with a monetization layer for Consultancies and a Social Portfolio system for candidates.
+Core Logic: Build Profile -> Screen (The Gauntlet) -> Monetize -> Participate -> AI Analysis -> Hiring.
+
+# Tech Stack
+- Framework: Next.js 14+ (App Router)
+- Language: TypeScript (Strict)
+- Styling: Tailwind CSS, Shadcn UI, Lucide React
+- Database: PostgreSQL (Supabase), Prisma ORM
+- Auth: NextAuth.js v5 (Auth.js)
+- Payments: Stripe Connect & Checkout
+- Validation: Zod, React Hook Form
+- AI: OpenAI API (GPT-4o)
+
+# Coding Standards
+
+## 1. Architecture & Patterns
+- **Server Components by Default**: Always start with Server Components (`RSC`). Only add "use client" when using hooks (`useState`, `useEffect`) or event listeners.
+- **Server Actions over API Routes**: Use Next.js Server Actions for all data mutations and form submissions. Avoid creating `/api` routes unless strictly necessary for external webhooks (e.g., Stripe) or 3rd party integrations.
+- **Service Layer**: Keep business logic out of UI components.
+  - Place database logic in `src/lib/services/`.
+  - Place server actions in `src/lib/actions/`.
+  - UI components should only handle presentation and invocation.
+- **Component Colocation**: Keep related components close. Small, specific components are preferred over large monolithic ones.
+
+## 2. Data & Type Safety
+- **Prisma Only**: All database interaction must occur via Prisma Client. Never write raw SQL unless optimized for complex analytics.
+- **Zod Validation**: Every Server Action and API route must validate inputs using Zod schemas.
+- **Strict Interfaces**: Define explicit TypeScript interfaces for all component props. Avoid `any`.
+- **Async/Await**: Always use async/await for asynchronous operations. Handle errors with `try/catch` blocks in Server Actions and return standard error objects.
+
+## 3. UI & Styling
+- **Shadcn UI**: Use Shadcn components for base UI elements. Do not reinvent standard components (Buttons, Inputs, Dialogs).
+- **Tailwind CSS**: Use utility classes for styling. Follow mobile-first design pattern (`class="block md:flex"`).
+- **Icons**: Use `lucide-react` for all icons.
+- **Responsive**: Ensure all layouts work on mobile, tablet, and desktop.
+
+# QuietHR Domain Rules (CRITICAL)
+
+## Privacy & Data Security
+- **PII Protection**: NEVER fetch or expose Candidate PII (email, phone, real name) in public API responses or Client Components unless:
+  1. The requesting User is the Candidate themselves.
+  2. The requesting Recruiter has a `Ticket` with `status: 'PAID'` for that specific Candidate.
+- **Privacy Gate**: Do not perform AI sentiment analysis on Portfolio text if `User.privacy_consent` is `false`.
+
+## Monetization & Payments
+- **Consultancy Verification**: Before allowing a `User` (Recruiter) to create a 'PAID' event, verify they have a connected `stripe_connect_id`.
+- **The Gauntlet (Payment Gate)**: 
+  - A Candidate CANNOT initiate a Stripe Checkout flow for a ticket unless they have a `ScreeningResult` record for that event where `passed === true`.
+  - ALWAYS re-validate this condition on the server immediately before creating the Payment Intent.
+
+## AI & Scoring
+- **Scoring Consistency**: Calculate `Composite_Score` using the standard formula weights: (Pre_Screen * 0.2) + (Portfolio_Quality * 0.15) + (Live_Quiz * 0.25) + (Sentiment * 0.2) + (AI_Interview * 0.2).
+- **Mock First**: When developing AI features, implement a mock service first to establish the data flow before connecting live OpenAI keys.
+
+# File Structure
+- `src/app`: App Router pages and layouts.
+- `src/components/ui`: Shadcn primitives.
+- `src/components/domain`: Feature-specific components (e.g., `ProfileCard`, `QuizInterface`).
+- `src/lib/db.ts`: Prisma client instance.
+- `src/lib/actions`: Server Actions.
+- `src/lib/services`: Business logic (Prisma calls).
+- `src/lib/utils`: Helper functions.
+

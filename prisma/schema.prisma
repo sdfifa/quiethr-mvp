@@ -1,0 +1,151 @@
+// schema.prisma
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  CANDIDATE
+  RECRUITER
+  ADMIN
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  role            UserRole  @default(CANDIDATE)
+  wallet_balance  Decimal   @default(0.0)
+  privacy_consent Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  
+  // Specific QuietHR fields
+  stripe_connect_id String?   // The Recruiter's payout account ID
+  is_consultancy    Boolean   @default(false) // Differentiates In-house vs Agency
+
+  // Relations
+  profile         Profile?
+  portfolioItems  PortfolioItem[]
+  tickets         Ticket[]
+  screeningResults ScreeningResult[]
+  candidateScores CandidateScore[]
+  eventsOwned     Event[]   @relation("EventOwner")
+  messages        EventMessage[]
+}
+
+model Profile {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  user            User    @relation(fields: [userId], references: [id])
+  headline        String?
+  bio             String? @db.Text
+  video_intro_url String?
+  social_links    Json?   // Structure: { github: string, linkedin: string, website: string }
+  tech_stack      String[] // Array of tags e.g. ["React", "Python"]
+}
+
+model PortfolioItem {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  title         String
+  description   String?  @db.Text
+  media_url     String?  // S3 URL for video/image
+  external_link String?  // GitHub, App Store
+  tags          String[]
+  
+  // AI Analysis Metadata
+  is_verified_link Boolean @default(false)
+  ai_quality_score Float   @default(0.0) // 0-10 scale based on AI analysis
+  
+  createdAt     DateTime @default(now())
+}
+
+model Event {
+  id               String   @id @default(cuid())
+  ownerId          String
+  owner            User     @relation("EventOwner", fields: [ownerId], references: [id])
+  topic            String
+  description      String?
+  start_time       DateTime
+  ticket_price     Decimal
+  
+  // The Gate
+  pre_screening_id String?  @unique // Link to assessment config
+  pass_threshold   Int      @default(70) // Score needed to unlock payment
+  
+  tickets          Ticket[]
+  screeningResults ScreeningResult[]
+  messages         EventMessage[]
+}
+
+model ScreeningResult {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
+  
+  score     Int      // 0-100
+  passed    Boolean
+  completedAt DateTime @default(now())
+  
+  @@unique([userId, eventId]) // One attempt per event
+}
+
+model Ticket {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  eventId        String
+  event          Event         @relation(fields: [eventId], references: [id])
+  payment_status PaymentStatus @default(PENDING)
+  payment_intent String?       // Stripe ID
+  
+  purchasedAt    DateTime      @default(now())
+  
+  @@unique([userId, eventId])
+}
+
+model CandidateScore {
+  id                String @id @default(cuid())
+  userId            String
+  user              User   @relation(fields: [userId], references: [id])
+  eventId           String // Contextual score per event/job
+  
+  pre_screen_score  Float
+  portfolio_quality Float
+  live_quiz_score   Float
+  sentiment_score   Float
+  ai_interview      Float
+  
+  composite_score   Float  // Calculated total
+  
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([userId, eventId])
+}
+
+model EventMessage {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  event     Event    @relation(fields: [eventId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Indexes for fast retrieval during AI analysis
+  @@index([eventId])
+}
