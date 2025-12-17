@@ -46,7 +46,7 @@ export default function CandidateEventsPage() {
         <div className="h-64 bg-gradient-to-b from-gray-900 to-black flex flex-col items-center justify-center relative">
            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
            <span className="text-8xl filter drop-shadow-[0_0_15px_rgba(255,215,0,0.5)]">🏛️</span>
-           {event.status === 'PAID' && (
+            {event.ticket_status === 'PAID' && (
              <div className="absolute top-4 right-4 bg-green-900/80 text-green-400 px-4 py-1 rounded-full text-sm font-bold border border-green-700 flex items-center gap-2">
                <ShieldCheck className="h-4 w-4" /> ACCESS GRANTED
              </div>
@@ -59,7 +59,7 @@ export default function CandidateEventsPage() {
                <h2 className="text-3xl font-bold text-white tracking-tight">{event.title}</h2>
                <p className="text-[#FFD700] font-medium mt-1">Live Masterclass • ${event.price}</p>
             </div>
-            {event.status !== 'PAID' && (
+            {event.ticket_status !== 'PAID' && (
               <span className="bg-white/5 text-gray-400 px-3 py-1 rounded text-xs font-bold border border-white/10 flex items-center gap-2 uppercase tracking-widest">
                 <Lock className="h-3 w-3" /> Locked
               </span>
@@ -76,7 +76,7 @@ export default function CandidateEventsPage() {
         </CardContent>
 
         <CardFooter className="bg-black/40 border-t border-white/5 p-8">
-          {event.status === 'PAID' ? (
+          {event.ticket_status === 'PAID' ? (
              <Button disabled className="w-full h-12 bg-green-900/20 text-green-400 border border-green-900/50">
                <CheckCircle className="mr-2 h-5 w-5" /> Ticket in Wallet
              </Button>

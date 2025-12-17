@@ -17,7 +17,9 @@ export interface Event {
   id: string;
   title: string;
   price: number;
-  status: 'LOCKED' | 'PAID';
+  status: 'live' | 'upcoming' | 'ended';
+  ticket_status: 'LOCKED' | 'AVAILABLE' | 'PAID';
+  chat_log?: Array<{ id: string; user: string; message: string; sentiment: 'positive' | 'neutral'; timestamp: number }>;
 }
 
 interface MockState {
@@ -33,6 +35,8 @@ interface MockState {
   simulateUpload: () => Promise<void>;
   unlockCandidate: (id: string) => Promise<void>;
   purchaseTicket: (eventId: string) => Promise<void>;
+  simulateGauntletSubmit: (answers: any) => Promise<void>;
+  simulatePayment: (eventId: string) => Promise<void>;
 }
 
 // Mock Data
@@ -54,7 +58,17 @@ export const useMockStore = create<MockState>((set) => ({
   },
   candidates: MOCK_CANDIDATES,
   events: [
-    { id: 'ev-1', title: 'Advanced AI Architecture', price: 50, status: 'LOCKED' }
+    { 
+      id: 'ev-1', 
+      title: 'Advanced AI Architecture', 
+      price: 50, 
+      status: 'upcoming', 
+      ticket_status: 'LOCKED',
+      chat_log: [
+        { id: 'msg-1', user: 'Alex_Chen', message: 'How does RAG work with vector stores?', sentiment: 'positive', timestamp: Date.now() - 120000 },
+        { id: 'msg-2', user: 'Sarah_K', message: 'What about fine-tuning vs prompting?', sentiment: 'positive', timestamp: Date.now() - 60000 }
+      ]
+    }
   ],
 
   toggleRole: (role) => set((state) => ({ currentUser: { ...state.currentUser, role } })),
@@ -79,7 +93,24 @@ export const useMockStore = create<MockState>((set) => ({
   purchaseTicket: async (eventId) => {
     set((state) => ({
       currentUser: { ...state.currentUser, wallet: state.currentUser.wallet - 50 },
-      events: state.events.map(e => e.id === eventId ? { ...e, status: 'PAID' } : e)
+      events: state.events.map(e => e.id === eventId ? { ...e, ticket_status: 'PAID' } : e)
+    }));
+  },
+
+  simulateGauntletSubmit: async (answers) => {
+    // Simulate assessment processing
+    await new Promise(r => setTimeout(r, 1500));
+    // Update first event to make payment available
+    set((state) => ({
+      events: state.events.map((e, idx) => idx === 0 ? { ...e, ticket_status: 'AVAILABLE' } : e)
+    }));
+  },
+
+  simulatePayment: async (eventId) => {
+    await new Promise(r => setTimeout(r, 1000));
+    set((state) => ({
+      currentUser: { ...state.currentUser, wallet: state.currentUser.wallet - 50 },
+      events: state.events.map(e => e.id === eventId ? { ...e, ticket_status: 'PAID' } : e)
     }));
   }
 }));

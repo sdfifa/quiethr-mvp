@@ -9,7 +9,7 @@ export default function RecruiterDashboardPage() {
 
   const activeCandidates = candidates.length;
   const unlockedCandidates = candidates.filter(c => c.isUnlocked).length;
-  const totalRevenue = events.reduce((acc, e) => acc + (e.status === 'PAID' ? e.price : 0), 0); // Simplified logic
+  const totalRevenue = events.reduce((acc, e) => acc + (e.ticket_status === 'PAID' ? e.price : 0), 0); // Simplified logic
   const eventsCount = events.length;
 
   return (

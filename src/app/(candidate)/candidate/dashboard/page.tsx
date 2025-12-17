@@ -7,7 +7,7 @@ import { Wallet, Ticket, Trophy, Clock } from "lucide-react";
 export default function CandidateDashboardPage() {
   const { currentUser, events, candidates } = useMockStore();
   const myProfile = candidates[0]; // Simulating "Me"
-  const myTickets = events.filter(e => e.status === 'PAID');
+  const myTickets = events.filter(e => e.ticket_status === 'PAID');
 
   return (
     <div className="p-8 text-white">
